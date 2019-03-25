@@ -80,6 +80,7 @@ public class ChatClientGUI {
 		tfDisplayName.setColumns(10);
 		
 		JTextArea taMsg = new JTextArea();
+		taMsg.setLineWrap(true);
 		taMsg.setBounds(19, 156, 406, 98);
 		frame.getContentPane().add(taMsg);
 		
