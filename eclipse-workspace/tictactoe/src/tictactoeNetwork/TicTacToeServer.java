@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.net.*;
 import java.io.*;
 
-public class TicTacToeClient implements Runnable {
+public class TicTacToeServer implements Runnable {
 
 	// ----------------------------------------
 	// Variables
@@ -16,10 +16,12 @@ public class TicTacToeClient implements Runnable {
 	private String turn; // CIRCLE: client, CROSS: server
 
 	// for P2P communication
+	private ServerSocket serverSocket = null;
 	private Socket socket = null;
 	private Thread thread = null;
 	private DataInputStream in = null;
 	private DataOutputStream out = null;
+	// private int myPort;
 
 	// for accessing GUI
 	private JButton btn1;
@@ -34,7 +36,7 @@ public class TicTacToeClient implements Runnable {
 
 	private JTextArea taLog;
 
-	// ---------------------------------------
+	// ----------------------------------------
 	// Public Methods (including constructors)
 	// ----------------------------------------
 	public void init() {
@@ -60,10 +62,11 @@ public class TicTacToeClient implements Runnable {
 		btn9.setText("");
 
 		taLog.setText("");
+
 	}
 
-	public TicTacToeClient(String serverIP, int serverPort, JTextArea taLog, JButton btn1, JButton btn2, JButton btn3,
-			JButton btn4, JButton btn5, JButton btn6, JButton btn7, JButton btn8, JButton btn9) {
+	public TicTacToeServer(int port, JTextArea taLog, JButton btn1, JButton btn2, JButton btn3, JButton btn4,
+			JButton btn5, JButton btn6, JButton btn7, JButton btn8, JButton btn9) {
 
 		board = new String[TicTacToe.NUM_OF_ROWS][TicTacToe.NUM_OF_COLS];
 		TicTacToe.initBoard(board);
@@ -83,23 +86,29 @@ public class TicTacToeClient implements Runnable {
 		this.taLog = taLog;
 
 		try {
-			socket = new Socket(serverIP, serverPort);
-			in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-			out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-			taLog.append("client: connect to " + serverIP + ", " + serverPort + "\n");
+			taLog.append("server: binding to port " + port + "\n");
+			serverSocket = new ServerSocket(port);
+			taLog.append("server: started\n");
 
 			if (thread == null) {
 				thread = new Thread(this);
 				thread.start();
 			}
 		} catch (IOException e) {
-			taLog.append("client: error: connect to " + serverIP + ", " + serverPort + "\n");
+			taLog.append("server: error: cannot bind to port " + port + "\n");
 		}
 	}
 
 	@Override
 	public void run() {
+
 		try {
+			socket = serverSocket.accept();
+			taLog.append("server: connected to client " + socket.getInetAddress() + ", port = " + socket.getLocalPort()
+					+ "\n");
+			in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+			out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+
 			while (true) {
 				// get x, y coordinates in 2-dimensional array
 				String msg = in.readUTF();
@@ -115,7 +124,7 @@ public class TicTacToeClient implements Runnable {
 				}
 			}
 		} catch (Exception e) {
-			taLog.append("client: error: read message \n");
+			taLog.append("server: error: accept() \n");
 		}
 	}
 
@@ -143,7 +152,7 @@ public class TicTacToeClient implements Runnable {
 		} else if (row == 2 && col == 2) {
 			return btn9;
 		} else {
-			System.out.println("client: no button is selected");
+			System.out.println("server: no button is selected");
 			return null;
 		}
 	}
@@ -200,25 +209,25 @@ public class TicTacToeClient implements Runnable {
 	}
 
 	public void send(int row, int col) {
-		System.out.println("client: send");
+		System.out.println("server: send");
 
 		try {
 			out.writeUTF(row + "," + col);
 			out.flush();
 		} catch (Exception e) {
-			System.out.println("client: error: send()");
+			System.out.println("Server: error: send()");
 
 		}
 	}
 
 	public void send(String cmd) {
-		System.out.println("client: send " + cmd);
+		System.out.println("server: send " + cmd);
 
 		try {
 			out.writeUTF(cmd);
 			out.flush();
 		} catch (Exception e) {
-			System.out.println("client: error: send()");
+			System.out.println("server: error: send()");
 		}
 	}
 
